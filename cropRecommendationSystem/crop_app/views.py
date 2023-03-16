@@ -32,6 +32,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from .Controllers import *
 import time
+import pandas as pd
 
 # def sendmail(receiver,subject,body):
 #     msg = MIMEMultipart()
@@ -115,13 +116,14 @@ class Logout(APIView):
 def getRecommendations(request) :
         try :
             recommendationPipeline = RecommendationPipeline(request.user)
+            recommendations = None
             if(request.data.get("file") != None) :
                 #Saving image
                 tmstmp = time.time()
                 soilImgPath = default_storage.save(f"{tmstmp}.jpg", ContentFile(request.FILES["file"].read()))
                 
                 n = 5
-                recommendationPipeline.getRecommendationsByImage(soilImgPath,[request.data.get("lat"),request.data.get("lon")],n)
+                recommendations = recommendationPipeline.getRecommendationsByImage(soilImgPath,[request.data.get("lat"),request.data.get("lon")],n)
 
                 #Deleting image
                 path = os.path.join(settings.MEDIA_ROOT, f"{tmstmp}.jpg")
@@ -129,13 +131,96 @@ def getRecommendations(request) :
                 os.remove(path)
             else :
                 soilData = {"N": request.data["N"],"P": request.data["P"],"K": request.data["K"],"Ph": request.data["Ph"]}
-                recommendationPipeline.getRecommendationsByValues(soilData,[request.data.get("lat"),request.data.get("lon")],5)
+                recommendations = recommendationPipeline.getRecommendationsByValues(soilData,[request.data.get("lat"),request.data.get("lon")],5)
 
-            return Response(status=status.HTTP_200_OK)
+            cropDf = pd.read_csv(os.path.join(settings.DATASETS, "Crop Data New.csv"), engine="python")
+
+            resp = []
+            for recomm in recommendations :
+                resp.append({"id": recomm[0], "name": cropDf.iloc[recomm[0]]['Crop'], "description":cropDf.iloc[recomm[0]]['Description'], "img": cropDf.iloc[recomm[0]]['Image'] })
+
+            return Response({"Recommendations": resp})
         except Exception as e:
             print(str(e))
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+
+class farmer_history(generics.GenericAPIView):
+    serializer_class = FarmerHistorySerializer
+    queryset = FarmerHistory.objects.all()
+    permission_classes = (IsAuthenticated,)
+
+    def get(self,request):
+        farmer_historys = FarmerHistory.objects.filter(farmer=request.user)
+        serializer  = FarmerHistorySerializer(farmer_historys,many=True)
+        return Response(serializer.data)
+    def post(self,request):
+        year = request.data.get("year")
+        sowing_month = request.data.get("sowing_month")
+        harvest_month = request.data.get("harvest_month")
+        crop = request.data.get("crop")
+        actual = request.data.get("actual")
+        expected = request.data.get("expected")
+        farmer = request.user
+        data={
+            "year":year,
+            "sowing_month":sowing_month,
+            "harvest_month":harvest_month,
+            "crop":crop,
+            "actual":actual,
+            "expected":expected,
+            "farmer":farmer
+        }
+        serializer = FarmerHistorySerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
+class farmer_history_id(generics.GenericAPIView):
+    serializer_class = FarmerHistorySerializer
+    queryset = FarmerHistory.objects.all()
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self,request,id):
+        farmer_historys = FarmerHistory.objects.get(id=id)
+        farmer_historys.delete()
+        return Response("deleted Successfully",status=HTTP_200_OK)
+    def put(self,request,id):
+        year = request.data.get("year")
+        sowing_month = request.data.get("sowing_month")
+        harvest_month = request.data.get("harvest_month")
+        crop = request.data.get("crop")
+        actual = request.data.get("actual")
+        expected = request.data.get("expected")
+        farmer = request.user
+        farmer_historys = FarmerHistory.objects.get(id=id)
+        # print(data)
+        if year is not None:
+            farmer_historys.year=year
+        if sowing_month is not None:
+            farmer_historys.sowing_month=sowing_month
+        if harvest_month is not None:
+            farmer_historys.harvest_month = harvest_month
+        if crop is not None:
+            farmer_historys.crop = crop
+        if actual is not None:
+            farmer_historys.actual = actual
+        if expected is not None:
+            farmer_historys.expected = expected
+        farmer_historys.save()
+        farmer_historys = FarmerHistory.objects.get(id=id)
+        data={
+            "year":farmer_historys.year,
+            "sowing_month":farmer_historys.sowing_month,
+            "harvest_month":farmer_historys.harvest_month,
+            "crop":farmer_historys.crop,
+            "actual":farmer_historys.actual,
+            "expected":farmer_historys.expected,
+            "farmer":farmer
+        }
+        serializer = FarmerHistorySerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            return Response(serializer.data)     
 
 """
 print(settings.MEDIA_ROOT)

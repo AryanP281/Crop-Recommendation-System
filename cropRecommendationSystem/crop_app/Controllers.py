@@ -18,6 +18,7 @@ class RecommendationPipeline :
         self.soilMap = ["Alluvial", "Black", "Laterite", "Peat", "Sandy Loam", "Yellow"]
         self.cropMap = {0: 'apple', 1: 'banana', 2: 'blackgram', 3: 'chickpea', 4: 'coconut', 5: 'coffee', 6: 'cotton', 7: 'grapes', 8: 'jute', 9: 'kidneybeans', 10: 'lentil', 11: 'maize', 12: 'mango', 13: 'mothbeans', 14: 'mungbean', 15: 'muskmelon', 16: 'orange', 17: 'papaya', 18: 'pigeonpeas', 19: 'pomegranate', 20: 'rice', 21: 'watermelon'}
         self.user = user
+        self.cropPrice = {0: 7750, 1: 1200, 2: 9000, 3: 9500, 4: 1550, 5: 11500, 6: 7245, 7: 5500, 8: 5800, 9: 4300, 10: 7400, 11: 3000, 12: 28250, 13: 11250, 14: 9300, 15: 2000, 16: 4750, 17: 2100, 18: 3700, 19: 11000, 20: 5150, 21: 1100}
 
     def getRecommendationsByImage(self,soilImgPath, coords, n) :
         soilType = self.getSoilType(soilImgPath)
@@ -26,14 +27,33 @@ class RecommendationPipeline :
 
         initialRecommendations = self.getInitialRecommendations(soilData, weatherData,n) #[1,3, 5]
 
-        hs = self.getHistoryScores(initialRecommendations) #{1: 0.5, 3: 0.2}
+        hs = self.getHistoryScores(initialRecommendations) 
+        ps = self.getPriceScore(initialRecommendations) 
+
+        finalScores = {}
+        for recomm in initialRecommendations :
+            finalScores[recomm] = (2*hs[recomm][1] + ps[recomm]) / 3
+        
+        finalRecommendations = sorted(finalScores.items(), key=lambda x:x[1], reverse=True)
+        
+        return finalRecommendations
 
     def getRecommendationsByValues(self, soilProp, coords, n) :
         soilData = pd.DataFrame([[soilProp['N'],soilProp['P'],soilProp['K'],soilProp['Ph']]],columns=["N","P","K","ph",])
         weatherData = self.getWeatherDetails(coords)
 
-        initialRecommendations = self.getInitialRecommendations(soilData, weatherData,n)
-        print(initialRecommendations)
+        initialRecommendations = self.getInitialRecommendations(soilData, weatherData,n) #[1,3, 5]
+
+        hs = self.getHistoryScores(initialRecommendations) 
+        ps = self.getPriceScore(initialRecommendations) 
+
+        finalScores = {}
+        for recomm in initialRecommendations :
+            finalScores[recomm] = (2*hs[recomm][1] + ps[recomm]) / 3
+        
+        finalRecommendations = sorted(finalScores.items(), key=lambda x:x[1], reverse=True)
+        
+        return finalRecommendations
 
             
     def getSoilType(self,soilImgPath) :
@@ -75,7 +95,7 @@ class RecommendationPipeline :
     
     def getHistoryScores(self, initialRecommendations) :
         
-        cropDf = pd.read_csv(os.path.join(settings.DATASETS, "Crop Data New.csv"))
+        cropDf = pd.read_csv(os.path.join(settings.DATASETS, "Crop Data New.csv"), engine='python')
 
         farmerHistory = FarmerHistory.objects.select_related().filter(farmer=self.user)
         historyScores = {}
@@ -124,8 +144,17 @@ class RecommendationPipeline :
         return (1.0 - (dissm / len(c1))) 
             
 
-
+    def getPriceScore(self,initialRecommendations):
+        prices = {}
+        maxPrice = 0
+        for recomm in initialRecommendations :
+           prices[recomm] = self.cropPrice[recomm]
+           maxPrice = max(maxPrice, prices[recomm])
         
+        for recomm in initialRecommendations :
+            prices[recomm] /= maxPrice
+        
+        return prices  
 
 """
 img = np.frombuffer(soilPic)

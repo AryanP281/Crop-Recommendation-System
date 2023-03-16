@@ -16,3 +16,8 @@ class FarmerSerializer(serializers.ModelSerializer):
         profile.set_password(password)
         profile.save()
         return profile
+    
+class FarmerHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerHistory
+        fields = "__all__"
