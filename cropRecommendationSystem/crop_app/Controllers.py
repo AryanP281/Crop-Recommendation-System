@@ -18,6 +18,7 @@ class RecommendationPipeline :
         self.soilMap = ["Alluvial", "Black", "Laterite", "Peat", "Sandy Loam", "Yellow"]
         self.cropMap = {0: 'apple', 1: 'banana', 2: 'blackgram', 3: 'chickpea', 4: 'coconut', 5: 'coffee', 6: 'cotton', 7: 'grapes', 8: 'jute', 9: 'kidneybeans', 10: 'lentil', 11: 'maize', 12: 'mango', 13: 'mothbeans', 14: 'mungbean', 15: 'muskmelon', 16: 'orange', 17: 'papaya', 18: 'pigeonpeas', 19: 'pomegranate', 20: 'rice', 21: 'watermelon'}
         self.user = user
+        self.crop_price = {0: 7750, 1: 1200, 2: 9000, 3: 9500, 4: 1550, 5: 11500, 6: 7245, 7: 5500, 8: 5800, 9: 4300, 10: 7400, 11: 3000, 12: 28250, 13: 11250, 14: 9300, 15: 2000, 16: 4750, 17: 2100, 18: 3700, 19: 11000, 20: 5150, 21: 1100}
 
     def getRecommendationsByImage(self,soilImgPath, coords, n) :
         soilType = self.getSoilType(soilImgPath)
@@ -29,13 +30,14 @@ class RecommendationPipeline :
 
         hs = self.getHistoryScores(initialRecommendations) #{1: 0.5, 3: 0.2}
         print(hs)
-        #ps = self.getPriceScore(initialRecommendations) #{1: }
+        ps = self.getPriceScore(initialRecommendations) #{1: }
 
     def getRecommendationsByValues(self, soilProp, coords, n) :
         soilData = pd.DataFrame([[soilProp['N'],soilProp['P'],soilProp['K'],soilProp['Ph']]],columns=["N","P","K","ph",])
         weatherData = self.getWeatherDetails(coords)
 
         initialRecommendations = self.getInitialRecommendations(soilData, weatherData,n)
+        ps = self.getPriceScore(initialRecommendations)
         print(initialRecommendations)
 
             
@@ -126,6 +128,15 @@ class RecommendationPipeline :
         
         return (1.0 - (dissm / len(c1))) 
             
+
+    def getPriceScore(self,initial_recommendation):
+        lst=[]
+        k = {0: 7750, 1: 1200, 2: 9000, 3: 9500, 4: 1550, 5: 11500, 6: 7245, 7: 5500, 8: 5800, 9: 4300, 10: 7400, 11: 3000, 12: 28250, 13: 11250, 14: 9300, 15: 2000, 16: 4750, 17: 2100, 18: 3700, 19: 11000, 20: 5150, 21: 1100}
+        for j in initial_recommendation:
+            lst.append(k[j])
+        lst=[i/max(lst) for i in lst]
+        res = dict(zip(i, lst))
+        return res
 
 
         
