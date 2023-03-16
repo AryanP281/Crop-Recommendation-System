@@ -32,6 +32,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from .Controllers import *
 import time
+from rest_framework.status import HTTP_200_OK
 
 # def sendmail(receiver,subject,body):
 #     msg = MIMEMultipart()
