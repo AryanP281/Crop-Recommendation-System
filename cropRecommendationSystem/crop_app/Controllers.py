@@ -25,11 +25,8 @@ class RecommendationPipeline :
         weatherData = self.getWeatherDetails(coords)
 
         initialRecommendations = self.getInitialRecommendations(soilData, weatherData,n) #[1,3, 5]
-        print(initialRecommendations)
 
         hs = self.getHistoryScores(initialRecommendations) #{1: 0.5, 3: 0.2}
-        print(hs)
-        #ps = self.getPriceScore(initialRecommendations) #{1: }
 
     def getRecommendationsByValues(self, soilProp, coords, n) :
         soilData = pd.DataFrame([[soilProp['N'],soilProp['P'],soilProp['K'],soilProp['Ph']]],columns=["N","P","K","ph",])
