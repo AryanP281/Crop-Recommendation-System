@@ -76,7 +76,7 @@ class RecommendationPipeline :
         weatherRequest = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={coords[0]}&lon={coords[1]}&appid={settings.WEATHER_API_KEY}")
         if weatherRequest.status_code == 200 :
             weatherData = weatherRequest.json()
-            return {"temp": weatherData['main']['temp'],"humidity": weatherData['main']['humidity'], "rainfall": random.choice([3005,901,882,1034])}
+            return {"temp": weatherData['main']['temp'],"humidity": weatherData['main']['humidity'], "rainfall": random.choice([3005])}#[3005,901,882,1034]
         else :
             raise RuntimeError(f"Failed to fetch weather. {weatherRequest.status_code}")
 

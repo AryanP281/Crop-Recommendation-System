@@ -49,8 +49,8 @@ class MyUserManager(BaseUserManager):
 class User(AbstractBaseUser):
     email           = models.EmailField(max_length=50, unique=True)
     username        = models.CharField(max_length=25, unique=True)
-    first_name      = models.CharField(max_length=15)
-    last_name       = models.CharField(max_length=15)
+    first_name      = models.CharField(max_length=15,null=True,blank=True)
+    last_name       = models.CharField(max_length=15,null=True,blank=True)
     department      = models.CharField(max_length=15, blank=True, null=True)
     date_joined     = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login      = models.DateTimeField(verbose_name='last login', auto_now=True)
@@ -59,6 +59,7 @@ class User(AbstractBaseUser):
     is_staff        = models.BooleanField(default=False)
     is_superuser    = models.BooleanField(default=False)
     is_verified     = models.BooleanField(default=False)
+    
 
     
     def otp_generator(self):
@@ -76,7 +77,7 @@ class User(AbstractBaseUser):
 
 
     USERNAME_FIELD  = 'email'
-    REQUIRED_FIELDS = ['username','first_name','last_name']
+    REQUIRED_FIELDS = ['username']
 
     objects = MyUserManager()
 
@@ -89,14 +90,15 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return True
 
-    def name(self):
-        return self.first_name+' '+self.last_name
+    # def name(self):
+    #     return self.first_name+' '+self.last_name
 
 class Farmer(User):
     user=models.OneToOneField(User,on_delete=models.CASCADE,parent_link=True)
     contact_no=models.CharField(max_length=10,blank=False,unique=True)
+    name_f = models.CharField(max_length=200,null=True,blank=True)
     def name(self):
-        return self.first_name+' '+self.last_name
+        return self.name
 
 class FarmerHistory(models.Model):
     farmer = models.ForeignKey(Farmer,on_delete=models.CASCADE)

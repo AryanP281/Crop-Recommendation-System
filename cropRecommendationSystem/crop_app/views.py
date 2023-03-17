@@ -66,12 +66,12 @@ class Registration(APIView):
 
             data={
             "id":user.id,
-            "name": user.first_name + " " + user.last_name,
+            "name": user.name_f,
             "email":user.email,
             "username":user.username,
             "contact_no":user.contact_no,
             "token":token.key,
-            "resgistration status":"done",
+            "status":True,
             }
             # body = "Welcome! Your OTP (One time Password) to verify your Email ID is :"+str(user.otp)
             # sendmail(user.email,"Email Verification Mail",body)
@@ -88,14 +88,15 @@ class LoginUser(APIView):
             token, _ =Token.objects.get_or_create(user=user)
             login(request, user)
             contact_no=Farmer.objects.get(id=user.id).contact_no
+            name = Farmer.objects.get(id=user.id).name_f
             data = {
                 "id": user.pk,
-                "Name": user.first_name+" "+user.last_name,
-                "Username": user.username,
-                "Message":"done",
+                "name": name,
+                "username": user.username,
+                "message":"done",
                 "contact_no":contact_no,
                 "success":True,
-                "Token":token.key
+                "token":token.key
                 }
 
             return Response(data,status=status.HTTP_200_OK)
